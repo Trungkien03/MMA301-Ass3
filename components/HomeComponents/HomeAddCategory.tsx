@@ -7,16 +7,15 @@ import {
     Text,
     TextInput
 } from 'react-native';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch } from '../../hooks/useDispatch';
 import {
     AddCategoryPayload,
-    addCategoryAsync,
-    updateCategoryAsync
+    addCategoryAsync
 } from '../../store/redux/api/CategoryApis';
 
 const HomeUpdateCategory = () => {
     const [categoryName, setCategoryName] = useState('');
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
 
     const handleUpdateCategory = async () => {
         if (!categoryName.trim()) {

@@ -65,3 +65,11 @@ export const updateCategoryAsync = createAsyncThunk<
     );
     return response.data;
 });
+
+export const deleteCategoryAsync = createAsyncThunk<{ id: string }, string>(
+    'categories/deleteCategory',
+    async (categoryId) => {
+        await httpClient.delete(`${CATEGORIES_API}/${categoryId}`);
+        return { id: categoryId };
+    }
+);
