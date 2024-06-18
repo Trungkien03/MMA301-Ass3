@@ -5,13 +5,13 @@ import httpClient from '../../../utils/httpClient'; // Import your HTTP client
 const CATEGORIES_API = '/api/v1/categories';
 
 // Define the payload types for your API requests
-interface Category {
+export interface Category {
     id: string;
     name: string;
     items: OrchidItem[];
 }
 
-interface OrchidItem {
+export interface OrchidItem {
     id: string;
     name: string;
     weight: number;
@@ -24,27 +24,18 @@ interface OrchidItem {
     origin: string;
 }
 
-interface AddCategoryPayload {
+export interface AddCategoryPayload {
     name: string;
-    items: [];
+    items: OrchidItem[];
 }
 
-interface AddItemPayload {
-    categoryId: string;
-    item: {
-        name: string;
-        weight: number;
-        rating: string;
-        price: number;
-        isTopOfTheWeek: boolean;
-        image: string;
-        color: string;
-        bonus: string;
-        origin: string;
-    };
+export interface UpdateCategoryPayload {
+    id: string;
+    name: string; // Ensure name is always sent in update
+    items: OrchidItem[];
 }
 
-// Define your async thunk actions for API requests
+// Async Thunks
 export const fetchCategories = createAsyncThunk<Category[]>(
     'categories/fetchCategories',
     async () => {
@@ -64,15 +55,13 @@ export const addCategoryAsync = createAsyncThunk<Category, AddCategoryPayload>(
     }
 );
 
-export const addItemAsync = createAsyncThunk<Category, AddItemPayload>(
-    'categories/addItem',
-    async (payload) => {
-        const response = await httpClient.post<Category>(
-            `${CATEGORIES_API}/${payload.categoryId}/items`,
-            payload.item
-        );
-        return response.data;
-    }
-);
-
-// Export any additional types or functions as needed
+export const updateCategoryAsync = createAsyncThunk<
+    Category,
+    UpdateCategoryPayload
+>('categories/updateCategory', async (payload) => {
+    const response = await httpClient.put<Category>(
+        `${CATEGORIES_API}/${payload.id}`,
+        payload
+    );
+    return response.data;
+});

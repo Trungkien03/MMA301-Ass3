@@ -1,5 +1,10 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import { fetchCategories } from '../api/CategoryApis';
+import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
+import {
+    fetchCategories,
+    addCategoryAsync,
+    updateCategoryAsync
+} from '../api/CategoryApis';
+import { loadFavorites, saveFavorites } from '../../storage';
 
 export interface Category {
     id: string;
@@ -34,17 +39,29 @@ const initialState: CategoriesState = {
     error: null
 };
 
+// Async thunk to load favorites from AsyncStorage
+export const loadFavoritesAsync = createAsyncThunk<string[]>(
+    'categories/loadFavorites',
+    async () => {
+        return await loadFavorites();
+    }
+);
+
 const CategorySlice = createSlice({
     name: 'categories',
     initialState,
     reducers: {
         addFavorite: (state, action: PayloadAction<{ id: string }>) => {
-            state.favorites.push(action.payload.id);
+            if (!state.favorites.includes(action.payload.id)) {
+                state.favorites.push(action.payload.id);
+                saveFavorites(state.favorites);
+            }
         },
         removeFavorite: (state, action: PayloadAction<{ id: string }>) => {
             state.favorites = state.favorites.filter(
                 (favId) => favId !== action.payload.id
             );
+            saveFavorites(state.favorites);
         },
         addCategory: (state, action: PayloadAction<Category>) => {
             state.allCategories.push(action.payload);
@@ -75,19 +92,36 @@ const CategorySlice = createSlice({
                 state.status = 'failed';
                 state.error = action.error.message || null;
             })
-            .addMatcher(
-                (action) => action.type.endsWith('/pending'),
-                (state) => {
-                    state.status = 'loading';
+            .addCase(addCategoryAsync.pending, (state) => {
+                state.status = 'loading';
+            })
+            .addCase(addCategoryAsync.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+                state.allCategories.push(action.payload);
+            })
+            .addCase(addCategoryAsync.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.error.message || null;
+            })
+            .addCase(updateCategoryAsync.pending, (state) => {
+                state.status = 'loading';
+            })
+            .addCase(updateCategoryAsync.fulfilled, (state, action) => {
+                state.status = 'succeeded';
+                const index = state.allCategories.findIndex(
+                    (category) => category.id === action.payload.id
+                );
+                if (index !== -1) {
+                    state.allCategories[index] = action.payload;
                 }
-            )
-            .addMatcher(
-                (action) => action.type.endsWith('/rejected'),
-                (state, action) => {
-                    state.status = 'failed';
-                    state.error = action.error.message || null;
-                }
-            );
+            })
+            .addCase(updateCategoryAsync.rejected, (state, action) => {
+                state.status = 'failed';
+                state.error = action.error.message || null;
+            })
+            .addCase(loadFavoritesAsync.fulfilled, (state, action) => {
+                state.favorites = action.payload;
+            });
     }
 });
 

@@ -8,26 +8,39 @@ import {
     TextInput
 } from 'react-native';
 import { useDispatch } from 'react-redux';
-import { Category, addCategory } from '../../store/redux/slice/CategorySlice';
+import {
+    AddCategoryPayload,
+    addCategoryAsync,
+    updateCategoryAsync
+} from '../../store/redux/api/CategoryApis';
 
-const HomeAddCategory = () => {
+const HomeUpdateCategory = () => {
     const [categoryName, setCategoryName] = useState('');
     const dispatch = useDispatch();
 
-    const handleAddCategory = () => {
+    const handleUpdateCategory = async () => {
         if (!categoryName.trim()) {
-            Alert.alert('Error', 'Category name is required');
+            Alert.alert('Error', 'Both Category ID and Name are required');
             return;
         }
 
-        const newCategory: Category = {
-            id: new Date().toISOString(),
-            name: categoryName,
-            items: []
-        };
+        try {
+            // Create the payload for the API request
+            const addCategory: AddCategoryPayload = {
+                name: categoryName,
+                items: []
+            };
 
-        dispatch(addCategory(newCategory));
-        Alert.alert('Success', 'Category added successfully');
+            // Dispatch the async action to update the category
+            await dispatch(addCategoryAsync(addCategory)).unwrap();
+
+            // Show success message if the API call was successful
+            Alert.alert('Success', 'Category updated successfully');
+            setCategoryName(''); // Clear the input field
+        } catch (error: any) {
+            // Handle any errors that occur during the API call
+            Alert.alert('Error', `Failed to update category: ${error.message}`);
+        }
     };
 
     return (
@@ -38,7 +51,7 @@ const HomeAddCategory = () => {
                 value={categoryName}
                 onChangeText={setCategoryName}
             />
-            <Button title="Add Category" onPress={handleAddCategory} />
+            <Button title="Add Category" onPress={handleUpdateCategory} />
         </ScrollView>
     );
 };
@@ -70,4 +83,4 @@ const styles = StyleSheet.create({
     }
 });
 
-export default HomeAddCategory;
+export default HomeUpdateCategory;

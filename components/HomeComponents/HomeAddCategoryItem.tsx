@@ -8,11 +8,13 @@ import {
     Text,
     TextInput
 } from 'react-native';
-import { useDispatch } from 'react-redux';
+import { useAppDispatch } from '../../hooks/useDispatch';
 import {
-    OrchidItem,
-    addItemCategory // Import the action creator
-} from '../../store/redux/slice/CategorySlice';
+    UpdateCategoryPayload,
+    fetchCategories,
+    updateCategoryAsync
+} from '../../store/redux/api/CategoryApis';
+import { OrchidItem, Category } from '../../store/redux/slice/CategorySlice';
 import { RootStackParamList } from '../../types/app.types';
 
 const HomeAddCategoryItem = () => {
@@ -25,12 +27,12 @@ const HomeAddCategoryItem = () => {
     const [itemBonus, setItemBonus] = useState('');
     const [itemOrigin, setItemOrigin] = useState('');
 
-    const dispatch = useDispatch();
+    const dispatch = useAppDispatch();
     const route = useRoute<RouteProp<RootStackParamList, 'AddCategoryItem'>>();
 
     const selectedCategoryId = route.params?.categoryId;
 
-    const handleAddItem = () => {
+    const handleAddItem = async () => {
         if (!itemName.trim() || !itemWeight.trim() || !itemPrice.trim()) {
             Alert.alert('Error', 'Please fill out all required fields');
             return;
@@ -54,13 +56,34 @@ const HomeAddCategoryItem = () => {
             origin: itemOrigin
         };
 
-        // Dispatch action to add item to the selected category
-        dispatch(
-            addItemCategory({ categoryId: selectedCategoryId, item: newItem })
-        );
-        Alert.alert('Success', 'Item added successfully');
-        // Reset input fields after adding item
-        resetFields();
+        try {
+            // Fetch the existing categories
+            const response = await dispatch(fetchCategories()).unwrap();
+            const existingCategory = response.find(
+                (category: Category) => category.id === selectedCategoryId
+            );
+            if (!existingCategory) {
+                Alert.alert('Error', 'Category not found');
+                return;
+            }
+
+            // Update the category with the new item
+            const updatedCategory: UpdateCategoryPayload = {
+                id: selectedCategoryId,
+                name: existingCategory.name, // Keep existing name
+                items: [...existingCategory.items, newItem]
+            };
+
+            // Dispatch the async action to update the category
+            await dispatch(updateCategoryAsync(updatedCategory)).unwrap();
+
+            // Show success message if the API call was successful
+            Alert.alert('Success', 'Category updated successfully');
+            resetFields(); // Clear the input fields
+        } catch (error: any) {
+            // Handle any errors that occur during the API call
+            Alert.alert('Error', `Failed to update category: ${error.message}`);
+        }
     };
 
     const resetFields = () => {
